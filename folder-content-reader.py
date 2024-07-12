@@ -71,9 +71,12 @@ def main() -> None:
     output_file = 'folder_contents.txt'
     script_name = os.path.basename(__file__)
 
+    # Get the name of the current folder
+    folder_name = os.path.basename(current_dir)
+
     with open(output_file, 'w', encoding='utf-8') as out_file:
-        # Write the tree structure
-        out_file.write("Folder Structure:\n")
+        # Write the folder name and tree structure
+        out_file.write(f"{folder_name}/\n")
         out_file.write(get_tree_structure(current_dir))
         out_file.write("\n\n")
 
