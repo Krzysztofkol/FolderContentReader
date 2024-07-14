@@ -1,52 +1,92 @@
 import os
-from typing import Iterator, Tuple
+from typing import Iterator, Tuple, List, Optional
+from collections import defaultdict
 
-def get_tree_structure(start_path: str) -> str:
+def get_dir_info(dir_path: str) -> Tuple[int, int]:
+    """
+    Get the total size and count of items in a directory.
+
+    Args:
+        dir_path (str): The path to the directory.
+
+    Returns:
+        Tuple[int, int]: The total size in bytes and the count of items.
+    """
+    total_size = 0
+    item_count = 0
+    for root, dirs, files in os.walk(dir_path):
+        item_count += len(dirs) + len(files)
+        for file in files:
+            file_path = os.path.join(root, file)
+            total_size += os.path.getsize(file_path)
+    return total_size, item_count
+
+def walk_directory(dir_path: str, script_name: str) -> Iterator[Tuple[str, os.DirEntry, bool, int, int]]:
+    """
+    Generator function to walk through the directory structure.
+
+    Args:
+        dir_path (str): The current directory path.
+        script_name (str): The name of the script to exclude.
+
+    Yields:
+        Tuple[str, os.DirEntry, bool, int, int]: A tuple containing the current path, 
+                                                 the os.DirEntry object, a boolean 
+                                                 indicating if it's the last entry,
+                                                 the size of the file/folder,
+                                                 and the count of items for directories.
+    """
+    entries = list(os.scandir(dir_path))
+    entries = [e for e in entries if e.name not in {'.git', '.idea', '__pycache__', script_name}]
+
+    # Pre-calculate sizes and item counts
+    info_cache = {}
+    for entry in entries:
+        if entry.is_dir():
+            info_cache[entry] = get_dir_info(entry.path)
+        else:
+            info_cache[entry] = (entry.stat().st_size, 0)
+
+    # Sort entries
+    sorted_entries = sorted(entries, key=lambda e: (-info_cache[e][1], -info_cache[e][0], e.name.lower()))
+
+    for i, entry in enumerate(sorted_entries):
+        is_last = (i == len(sorted_entries) - 1)
+        size, count = info_cache[entry]
+        yield dir_path, entry, is_last, size, count
+
+        if entry.is_dir():
+            yield from walk_directory(entry.path, script_name)
+
+def get_tree_structure(start_path: str, script_name: str) -> str:
     """
     Generate a string representation of the directory tree structure.
 
     Args:
         start_path (str): The root directory to start the tree structure from.
+        script_name (str): The name of the script to exclude from the tree.
 
     Returns:
         str: A string representation of the directory tree structure.
     """
-    def walk_directory(dir_path: str, prefix: str = "") -> Iterator[Tuple[str, str, bool]]:
-        """
-        Generator function to walk through the directory structure.
-
-        Args:
-            dir_path (str): The current directory path.
-            prefix (str): The prefix to use for the current level in the tree.
-
-        Yields:
-            Tuple[str, str, bool]: A tuple containing the current prefix, 
-                                   the os.DirEntry object, and a boolean 
-                                   indicating if it's the last entry.
-        """
-        # Get and sort directory entries, excluding hidden folders
-        entries = sorted(os.scandir(dir_path), key=lambda e: e.name.lower())
-        entries = [e for e in entries if e.name not in {'.git', '.idea', '__pycache__'}]
-        
-        for i, entry in enumerate(entries):
-            is_last = (i == len(entries) - 1)
-            yield prefix, entry, is_last
-
-            if entry.is_dir():
-                # Recursively walk through subdirectories
-                extension = '    ' if is_last else '│   '
-                yield from walk_directory(entry.path, prefix + extension)
-
     lines = []
-    for prefix, entry, is_last in walk_directory(start_path):
-        # Choose the appropriate connector symbol
+    prefix_map = defaultdict(lambda: "")
+
+    for dir_path, entry, is_last, size, count in walk_directory(start_path, script_name):
+        depth = dir_path.count(os.sep)
+        prefix = prefix_map[dir_path]
         connector = '└── ' if is_last else '├── '
-        # Add directory indicator '/' for directories
-        lines.append(f"{prefix}{connector}{entry.name}{'/' if entry.is_dir() else ''}")
+        name_with_indicator = f"{entry.name}{'/' if entry.is_dir() else ''}"
+        size_info = f" ({size} bytes)" if entry.is_file() else f" ({count} items)"
+        lines.append(f"{prefix}{connector}{name_with_indicator}{size_info}")
+
+        if entry.is_dir():
+            new_prefix = prefix + ('    ' if is_last else '│   ')
+            prefix_map[entry.path] = new_prefix
 
     return '\n'.join(lines)
 
-def get_file_contents(file_path: str) -> str:
+def get_file_contents(file_path: str) -> Optional[str]:
     """
     Read and return the contents of a file.
 
@@ -54,42 +94,50 @@ def get_file_contents(file_path: str) -> str:
         file_path (str): The path to the file to be read.
 
     Returns:
-        str: The contents of the file, or an error message if the file cannot be read.
+        Optional[str]: The contents of the file, or None if the file cannot be read.
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     except Exception as e:
-        return f"Error reading file: {str(e)}"
+        print(f"Error reading file {file_path}: {str(e)}")
+        return None
 
 def main() -> None:
     """
     Main function to generate the folder contents file.
     """
-    # Get the directory where the script is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
     output_file = 'folder_contents.txt'
     script_name = os.path.basename(__file__)
 
-    # Get the name of the current folder
     folder_name = os.path.basename(current_dir)
 
+    file_info: List[Tuple[str, int, Optional[str]]] = []
+
     with open(output_file, 'w', encoding='utf-8') as out_file:
-        # Write the folder name and tree structure
         out_file.write(f"{folder_name}/\n")
-        out_file.write(get_tree_structure(current_dir))
+        tree_structure = get_tree_structure(current_dir, script_name)
+        out_file.write(tree_structure)
         out_file.write("\n\n")
 
-        # Write the contents of each file
-        for root, _, files in os.walk(current_dir):
-            for file in files:
-                # Skip the output file and the script itself
-                if file not in {output_file, script_name}:
-                    file_path = os.path.join(root, file)
-                    relative_path = os.path.relpath(file_path, current_dir)
-                    out_file.write(f"### `{relative_path}` file:\n\n```\n")
-                    out_file.write(get_file_contents(file_path))
-                    out_file.write("\n```\n\n")
+        # Collect file information during tree traversal
+        for dir_path, entry, _, size, _ in walk_directory(current_dir, script_name):
+            if entry.is_file() and entry.name != output_file:
+                file_path = os.path.join(dir_path, entry.name)
+                file_contents = get_file_contents(file_path)
+                if file_contents is not None:
+                    file_info.append((file_path, size, file_contents))
+
+        # Sort files by size (descending)
+        file_info.sort(key=lambda x: x[1], reverse=True)
+
+        # Write sorted file contents
+        for file_path, file_size, file_contents in file_info:
+            relative_path = os.path.relpath(file_path, current_dir)
+            out_file.write(f"### `{relative_path}` file ({file_size} bytes):\n\n```\n")
+            out_file.write(file_contents)
+            out_file.write("\n```\n\n")
 
     print(f"Output written to {output_file}")
 
