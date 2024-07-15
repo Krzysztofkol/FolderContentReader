@@ -21,13 +21,14 @@ def get_dir_info(dir_path: str) -> Tuple[int, int]:
             total_size += os.path.getsize(file_path)
     return total_size, item_count
 
-def walk_directory(dir_path: str, script_name: str) -> Iterator[Tuple[str, os.DirEntry, bool, int, int]]:
+def walk_directory(dir_path: str, script_name: str, output_file: str) -> Iterator[Tuple[str, os.DirEntry, bool, int, int]]:
     """
     Generator function to walk through the directory structure.
 
     Args:
         dir_path (str): The current directory path.
         script_name (str): The name of the script to exclude.
+        output_file (str): The name of the output file to exclude.
 
     Yields:
         Tuple[str, os.DirEntry, bool, int, int]: A tuple containing the current path, 
@@ -37,7 +38,7 @@ def walk_directory(dir_path: str, script_name: str) -> Iterator[Tuple[str, os.Di
                                                  and the count of items for directories.
     """
     entries = list(os.scandir(dir_path))
-    entries = [e for e in entries if e.name not in {'.git', '.idea', '__pycache__', script_name}]
+    entries = [e for e in entries if e.name not in {'.git', '.idea', '__pycache__', script_name, output_file}]
 
     # Pre-calculate sizes and item counts
     info_cache = {}
@@ -56,15 +57,16 @@ def walk_directory(dir_path: str, script_name: str) -> Iterator[Tuple[str, os.Di
         yield dir_path, entry, is_last, size, count
 
         if entry.is_dir():
-            yield from walk_directory(entry.path, script_name)
+            yield from walk_directory(entry.path, script_name, output_file)
 
-def get_tree_structure(start_path: str, script_name: str) -> str:
+def get_tree_structure(start_path: str, script_name: str, output_file: str) -> str:
     """
     Generate a string representation of the directory tree structure.
 
     Args:
         start_path (str): The root directory to start the tree structure from.
         script_name (str): The name of the script to exclude from the tree.
+        output_file (str): The name of the output file to exclude from the tree.
 
     Returns:
         str: A string representation of the directory tree structure.
@@ -72,7 +74,7 @@ def get_tree_structure(start_path: str, script_name: str) -> str:
     lines = []
     prefix_map = defaultdict(lambda: "")
 
-    for dir_path, entry, is_last, size, count in walk_directory(start_path, script_name):
+    for dir_path, entry, is_last, size, count in walk_directory(start_path, script_name, output_file):
         depth = dir_path.count(os.sep)
         prefix = prefix_map[dir_path]
         connector = '└── ' if is_last else '├── '
@@ -117,13 +119,13 @@ def main() -> None:
 
     with open(output_file, 'w', encoding='utf-8') as out_file:
         out_file.write(f"{folder_name}/\n")
-        tree_structure = get_tree_structure(current_dir, script_name)
+        tree_structure = get_tree_structure(current_dir, script_name, output_file)
         out_file.write(tree_structure)
         out_file.write("\n\n")
 
         # Collect file information during tree traversal
-        for dir_path, entry, _, size, _ in walk_directory(current_dir, script_name):
-            if entry.is_file() and entry.name != output_file:
+        for dir_path, entry, _, size, _ in walk_directory(current_dir, script_name, output_file):
+            if entry.is_file():
                 file_path = os.path.join(dir_path, entry.name)
                 file_contents = get_file_contents(file_path)
                 if file_contents is not None:
@@ -143,5 +145,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    
+
 # python folder-content-reader.py
