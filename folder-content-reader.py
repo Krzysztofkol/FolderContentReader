@@ -63,11 +63,12 @@ def get_file_contents(file_path: str) -> Optional[str]:
 def process_file(file_info: Tuple[str, int, str], current_dir: str) -> str:
     file_path, file_size, file_contents = file_info
     relative_path = os.path.relpath(file_path, current_dir)
-    return f"### `{relative_path}` file ({file_size} bytes):\n\n```\n{file_contents}\n```\n\n"
+    file_extension = os.path.splitext(file_path)[1][1:]  # Get the file extension without the dot
+    return f"## `{relative_path}` ({file_size} bytes)\n\n```{file_extension}\n{file_contents}\n```\n\n"
 
 def main() -> None:
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    output_file = 'folder_contents.txt'
+    output_file = 'folder_contents.md'  # Changed to .md extension
     script_name = os.path.basename(__file__)
 
     folder_name = os.path.basename(current_dir)
@@ -75,11 +76,14 @@ def main() -> None:
     file_info: List[Tuple[str, int, Optional[str]]] = []
 
     with open(output_file, 'w', encoding='utf-8') as out_file:
-        out_file.write(f"### Folder structure:\n")
-        out_file.write(f"{folder_name}/\n")
+        out_file.write(f"# Folder Contents: {folder_name}\n\n")
+        out_file.write(f"## Folder structure:\n\n")
+        out_file.write(f"```\n{folder_name}/\n")
         tree_structure = get_tree_structure(current_dir, script_name, output_file)
         out_file.write(tree_structure)
-        out_file.write("\n\n")
+        out_file.write("\n```\n\n")
+
+        out_file.write("## File Contents:\n\n")
 
         for dir_path, entry, _, size, _ in walk_directory(current_dir, script_name, output_file):
             if entry.is_file():

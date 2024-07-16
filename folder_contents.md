@@ -1,11 +1,18 @@
-### Folder structure:
+# Folder Contents: _FolderContentReader-GitHub-version
+
+## Folder structure:
+
+```
 _FolderContentReader-GitHub-version/
 ├── README.md (802 bytes)
 └── folder-content-reader-py.bat (57 bytes)
-
-### `README.md` file (802 bytes):
-
 ```
+
+## File Contents:
+
+## `README.md` (802 bytes)
+
+```md
 # FolderContentReader
 
 Working with coding large multimodal models makes it extremely easy to write and troubleshoot code. Here I present FolderContentReader - a python script that, if ran in a folder, generates a text file consisting of:
@@ -23,9 +30,9 @@ I used Claude-3.5-Sonnet on https://claude.ai/ to generate the python script and
 
 ```
 
-### `folder-content-reader-py.bat` file (57 bytes):
+## `folder-content-reader-py.bat` (57 bytes)
 
-```
+```bat
 @echo off
 cd /d "%~dp0"
 python folder-content-reader.py
