@@ -118,7 +118,7 @@ def main() -> None:
             out_file.write(process_file((file_path, size, file_contents), current_dir))
         
         out_file.write("# Problem:\nPROBLEM_STATEMENT.\n")
-        out_file.write("# Task:\nTASK_STATEMENT. Let's 1. understand problem, 2. make detailed to-do list, 3. devise detailed plan to solve problem. Then let's take a deep breath, carry out the plan, and solve the problem step by step.")
+        out_file.write("# Task:\nTASK_STATEMENT. Lets 1. understand problem, 2. make detailed to-do list, 3. devise detailed plan to solve problem. Then lets take deep breath, carry out plan, and solve problem step by step.")
 
     # Process the output file
     process_output_file(output_file)
