@@ -78,7 +78,7 @@ def main() -> None:
     output_file = 'prompt_template.md'
     script_name = os.path.basename(__file__)
     folder_name = os.path.basename(current_dir)
-    excluded_formats = ["bat", "txt", "md"] # exclude the listed formats
+    excluded_formats = ["bat", "txt", "md", "csv"] # exclude the listed formats
     file_info: List[Tuple[str, int, Optional[str]]] = []
     
     with open(output_file, 'w', encoding='utf-8') as out_file:
