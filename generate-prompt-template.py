@@ -78,7 +78,7 @@ def main() -> None:
     output_file = 'prompt_template.md'
     script_name = os.path.basename(__file__)
     folder_name = os.path.basename(current_dir)
-    excluded_formats = ["bat", "txt", "md", "csv"] # exclude the listed formats
+    excluded_formats = ["bat", "txt", "md", "csv", "map"] # exclude the listed formats
     file_info: List[Tuple[str, int, Optional[str]]] = []
     
     with open(output_file, 'w', encoding='utf-8') as out_file:
@@ -119,7 +119,8 @@ def main() -> None:
                 out_file.write(processed_file)
         
         out_file.write("# Problem:\nPROBLEM_STATEMENT.\n")
-        out_file.write("# Task:\nTASK_STATEMENT. Lets 1. understand problem, 2. make detailed to-do list, 3. devise detailed plan to solve problem. Then lets take deep breath, carry out plan, and solve problem step by step.")
+        out_file.write("# Task:\nTASK_STATEMENT. Lets 1. understand task and mental contrast potential issues, 2. make detailed to-do list, 3. devise detailed plan to complete task. Then lets take deep breath, carry out plan, and do task step-by-step. Write full code but replace unchanged parts with comments\n")
+        out_file.write("# Task:\nTASK_STATEMENT. Lets 1. understand problem and mental-contrast issues, 2. make detailed to-do list, 3. devise detailed plan to solve problem. Then lets take deep breath, carry out plan, and solve problem step-by-step. Write full code but replace unchanged parts with comments")
     
     # Process the output file
     process_output_file(output_file)
